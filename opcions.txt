@@ -1,4 +1,0 @@
-1
-llista_tot.cfg
-5
-
