@@ -198,6 +198,9 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
 
   /* Initialize the tree */
   initTree(tree);
+  
+
+  #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(static) 
 
   /* Observe that finished is a local variable, not a global one */
   for(i = 0; i < num_files; i++)
@@ -239,9 +242,10 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
       fclose(fp_file);
 
       /* Copy all data from local tree to global tree */
-
-      tree_copy_local2global(tree_file, tree);
-
+      #pragma omp critical
+      {
+        tree_copy_local2global(tree_file, tree);
+        }
       /* Delete local tree */
 
       deleteTree(tree_file);
