@@ -16,6 +16,9 @@
 #define MAXLINE      200
 #define MAGIC_NUMBER 0x0133C8F9
 
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wuninitialized"
+
 /**
  *
  *  Counts the number of nodes of a tree
@@ -201,7 +204,7 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
   initTree(tree);
   
 
-  #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(static) 
+  #pragma omp parallel num_threads(2) for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(static) 
 
   /* Observe that finished is a local variable, not a global one */
   for(i = 0; i < num_files; i++)
