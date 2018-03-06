@@ -201,7 +201,7 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
   initTree(tree);
   
 
-  #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(static) 
+  #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(dynamic) 
 
   /* Observe that finished is a local variable, not a global one */
   for(i = 0; i < num_files; i++)
@@ -279,14 +279,14 @@ RBTree *create_tree(char *filename)
     }
 
     /* Llegim el fitxer. Suposem que el fitxer esta en un format correcte */
-    fgets(line, MAXLINE, fp);
+    if(fgets(line, MAXLINE, fp));
     num_files = atoi(line);
     filename_texts = (char **) malloc(sizeof(char *) * num_files); 
 
     /* Llegim els noms dels fitxers a processar */
     for(i = 0; i < num_files; i++)
     {
-        fgets(line, MAXLINE, fp); 
+        if(fgets(line, MAXLINE, fp)); 
         line[strlen(line)-1]=0;
 
         /* Be sure we can acces the file */
@@ -386,14 +386,14 @@ RBTree *load_tree(char *filename)
     }
 
     /* Read magic number */
-    fread(&magic, sizeof(int), 1, fp);
+    if(fread(&magic, sizeof(int), 1, fp));
     if (magic != MAGIC_NUMBER) {
         printf("ERROR: magic number is not correct.\n");
         return NULL;
     }
 
     /* Read number of nodes */
-    fread(&nodes, sizeof(int), 1, fp);
+    if(fread(&nodes, sizeof(int), 1, fp));
     if (nodes <= 0) {
         printf("ERROR: number of nodes is zero or negative.\n");
         return NULL;
@@ -409,17 +409,17 @@ RBTree *load_tree(char *filename)
      * returned to the user. */
     for(i = 0; i < nodes; i++)
     {
-        fread(&len, sizeof(int), 1, fp);
+        if(fread(&len, sizeof(int), 1, fp));
         if (len <= 0) {
             printf("ERROR: len is zero or negative. Not all tree could be read.\n");
             return tree;
         }
 
         paraula = malloc(sizeof(char) * (len + 1));
-        fread(paraula, sizeof(char), len, fp);
+        if(fread(paraula, sizeof(char), len, fp));
         paraula[len] = 0;
 
-        fread(&num_vegades, sizeof(int), 1, fp);
+        if(fread(&num_vegades, sizeof(int), 1, fp));
         if (num_vegades <= 0) {
             printf("ERROR: num_vegades is zero or negative. Not all tree could be read.\n");
             free(paraula);
@@ -459,7 +459,7 @@ int menu()
     printf(" 5 - Sortir\n\n");
     printf("   Escull opcio: ");
 
-    fgets(str, 5, stdin);
+    if(fgets(str, 5, stdin));
     opcio = atoi(str); 
 
     return opcio;
@@ -516,7 +516,7 @@ int main(int argc, char **argv)
                 }
 
                 printf("Introdueix fitxer que conte llistat fitxers: ");
-                fgets(str, MAXLINE, stdin);
+                if(fgets(str, MAXLINE, stdin));
                 str[strlen(str)-1]=0;
 
                 printf("Creant arbre...\n");
@@ -530,7 +530,7 @@ int main(int argc, char **argv)
                 }
 
                 printf("Introdueix el nom de fitxer en el qual es desara l'arbre: ");
-                fgets(str, MAXLINE, stdin);
+                if(fgets(str, MAXLINE, stdin));
 
                 str[strlen(str)-1]=0;
 
@@ -546,7 +546,7 @@ int main(int argc, char **argv)
                 }
 
                 printf("Introdueix nom del fitxer amb l'arbre: ");
-                fgets(str, MAXLINE, stdin);
+                if(fgets(str, MAXLINE, stdin));
 
                 str[strlen(str)-1]=0;
 
@@ -561,7 +561,7 @@ int main(int argc, char **argv)
                 }
 
                 printf("Introdueix la paraula: ");
-                fgets(str, MAXLINE, stdin);
+                if(fgets(str, MAXLINE, stdin));
                 str[strlen(str)-1]=0;
 
                 if (strlen(str) == 0) {
