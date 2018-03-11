@@ -9,11 +9,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <omp.h>
+
 
 #include "red-black-tree.h"
 
 #define MAXLINE      200
 #define MAGIC_NUMBER 0x0133C8F9
+#define STATIC_CHUNK0 1 
+#define STATIC_CHUNK1 3
+#define STATIC_CHUNK2 5
+#define STATIC_CHUNK3 10
+#define DINAMIC_CHUNK0 1 
+#define DINAMIC_CHUNK1 3
+#define DINAMIC_CHUNK2 5
+#define DINAMIC_CHUNK3 10
+#define NUM_THREADS0 2
+#define NUM_THREADS1 4
+#define NUM_THREADS2 8
 
 /**
  *
@@ -175,7 +188,9 @@ void tree_copy_local2global_recursive(Node *x, RBTree *tree_global)
 
 void tree_copy_local2global(RBTree *tree_file, RBTree *tree_global)
 {
-  tree_copy_local2global_recursive(tree_file->root, tree_global);
+   //#pragma omp critical{
+    tree_copy_local2global_recursive(tree_file->root, tree_global);
+    //}
 }
 
 /**
@@ -198,6 +213,14 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
 
   /* Initialize the tree */
   initTree(tree);
+  
+  omp_set_num_threads(NUM_THREADS0); /*omp_set_num_threads(NUM_THREADS1); omp_set_num_threads(NUM_THREADS2);*/
+
+  #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(static)  /*num_threads(num_THREADS0)num_threads(num_THREADS1)num_threads(num_THREADS2)*//* schedule(static,STATIC_CHUNK0)schedule(static,STATIC_CHUNK1)schedule(static,STATIC_CHUNK2)schedule(static,STATIC_CHUNK3)*/
+  
+  
+/*   #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(dynamic) num_threads(num_THREADS0)num_threads(num_THREADS1)num_threads(num_THREADS2)schedule(dynamic,DINAMIC_CHUNK0)schedule(dynamic,DINAMIC_CHUNK1)schedule(dynamic,DINAMIC_CHUNK2)schedule(dynamic,DINAMIC_CHUNK3)*/
+
 
   /* Observe that finished is a local variable, not a global one */
   for(i = 0; i < num_files; i++)
@@ -239,9 +262,10 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
       fclose(fp_file);
 
       /* Copy all data from local tree to global tree */
-
-      tree_copy_local2global(tree_file, tree);
-
+      #pragma omp critical
+      {
+        tree_copy_local2global(tree_file, tree);
+        }
       /* Delete local tree */
 
       deleteTree(tree_file);
