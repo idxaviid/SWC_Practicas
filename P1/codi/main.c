@@ -10,8 +10,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <omp.h>
 
 #include "red-black-tree.h"
+
+#define MAXLINE      200
+#define MAGIC_NUMBER 0x0133C8F9
+
+#define STATIC_CHUNK0 1 
+#define STATIC_CHUNK1 3
+#define STATIC_CHUNK2 5
+#define STATIC_CHUNK3 10
+#define DINAMIC_CHUNK0 1 
+#define DINAMIC_CHUNK1 3
+#define DINAMIC_CHUNK2 5
+#define DINAMIC_CHUNK3 10
+#define NUM_THREADS2 2
+#define NUM_THREADS4 4
+#define NUM_THREADS8 8
 
 #define MAXLINE      200
 #define MAGIC_NUMBER 0x0133C8F9
@@ -164,20 +180,54 @@ void process_line(char *line, RBTree *tree)
 
 void tree_copy_local2global_recursive(Node *x, RBTree *tree_global)
 {
-  if (x->right != NIL)
-    tree_copy_local2global_recursive(x->right, tree_global);
 
-  if (x->left != NIL)
-    tree_copy_local2global_recursive(x->left, tree_global);
+  #pragma omp critical
+  {
+    if (x->right != NIL)
+      tree_copy_local2global_recursive(x->right, tree_global);
 
-  insert_word_tree(tree_global, x->data->key, x->data->num_vegades);
+    if (x->left != NIL)
+      tree_copy_local2global_recursive(x->left, tree_global);
+
+    insert_word_tree(tree_global, x->data->key, x->data->num_vegades);
+  }
 }
 
 
 void tree_copy_local2global(RBTree *tree_file, RBTree *tree_global)
 {
-  tree_copy_local2global_recursive(tree_file->root, tree_global);
+
+    tree_copy_local2global_recursive(tree_file->root, tree_global);
 }
+
+
+
+void construccioEnTasca(char *line, FILE *fp_file, RBTree *tree_file, RBTree *tree){
+
+  
+  while (fgets(line, MAXLINE, fp_file) != NULL) {
+          /* Remove the \n at the end of the line */
+
+          line[strlen(line) - 1] = 0;
+
+          /* Process the line */
+
+          process_line(line, tree_file); 
+      }
+
+      fclose(fp_file);
+
+      /* Copy all data from local tree to global tree */
+      //#pragma omp critical
+      //{
+        tree_copy_local2global(tree_file, tree);
+      //}
+      /* Delete local tree */
+
+      deleteTree(tree_file);
+      free(tree_file);
+}
+
 
 /**
  *
@@ -201,13 +251,19 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
   initTree(tree);
   
 
-  #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(dynamic) 
+  //omp_set_num_threads(NUM_THREADS2); 
+  //omp_set_num_threads(NUM_THREADS4); 
+  omp_set_num_threads(NUM_THREADS8);
+
+  #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(dynamic)
+  /*num_threads(num_THREADS0)num_threads(num_THREADS1)num_threads(num_THREADS2)*/
+  /*schedule(static,STATIC_CHUNK0)schedule(static,STATIC_CHUNK1)schedule(static,STATIC_CHUNK2)schedule(static,STATIC_CHUNK3)*/
+  /*schedule(dynamic,DINAMIC_CHUNK0)schedule(dynamic,DINAMIC_CHUNK1)schedule(dynamic,DINAMIC_CHUNK2)schedule(dynamic,DINAMIC_CHUNK3)*/ 
 
   /* Observe that finished is a local variable, not a global one */
   for(i = 0; i < num_files; i++)
   {
       /* Allocate  memory for local tree */
-
       RBTree *tree_file;
       tree_file = (RBTree *) malloc(sizeof(RBTree));
 
@@ -230,27 +286,8 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
           continue;
       }
 
-      while (fgets(line, MAXLINE, fp_file) != NULL) {
-          /* Remove the \n at the end of the line */
-
-          line[strlen(line) - 1] = 0;
-
-          /* Process the line */
-
-          process_line(line, tree_file); 
-      }
-
-      fclose(fp_file);
-
-      /* Copy all data from local tree to global tree */
-      #pragma omp critical
-      {
-        tree_copy_local2global(tree_file, tree);
-        }
-      /* Delete local tree */
-
-      deleteTree(tree_file);
-      free(tree_file);
+      #pragma omp task
+        construccioEnTasca(line,fp_file,tree_file,tree);
   }
 
 
