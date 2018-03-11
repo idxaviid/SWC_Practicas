@@ -181,8 +181,8 @@ void process_line(char *line, RBTree *tree)
 void tree_copy_local2global_recursive(Node *x, RBTree *tree_global)
 {
 
-  #pragma omp critical
-  {
+  //#pragma omp critical
+  //{
     if (x->right != NIL)
       tree_copy_local2global_recursive(x->right, tree_global);
 
@@ -190,7 +190,7 @@ void tree_copy_local2global_recursive(Node *x, RBTree *tree_global)
       tree_copy_local2global_recursive(x->left, tree_global);
 
     insert_word_tree(tree_global, x->data->key, x->data->num_vegades);
-  }
+  //}
 }
 
 
@@ -218,10 +218,10 @@ void construccioEnTasca(char *line, FILE *fp_file, RBTree *tree_file, RBTree *tr
       fclose(fp_file);
 
       /* Copy all data from local tree to global tree */
-      //#pragma omp critical
-      //{
+      #pragma omp critical
+      {
         tree_copy_local2global(tree_file, tree);
-      //}
+      }
       /* Delete local tree */
 
       deleteTree(tree_file);
@@ -286,7 +286,7 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
           continue;
       }
 
-      #pragma omp task
+      //#pragma omp task
         construccioEnTasca(line,fp_file,tree_file,tree);
   }
 
