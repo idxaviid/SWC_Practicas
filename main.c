@@ -221,6 +221,8 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
   #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(static)  
   /* schedule(static,STATIC_CHUNK0)schedule(static,STATIC_CHUNK1)schedule(static,STATIC_CHUNK2)schedule(static,STATIC_CHUNK3)*//*num_threads(num_THREADS0)num_threads(num_THREADS1)num_threads(num_THREADS2)*/
   /* Observe that finished is a local variable, not a global one */
+  /*#pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(dynamic) num_threads(num_THREADS0)num_threads(num_THREADS1)num_threads(num_THREADS2)schedule(dynamic,DINAMIC_CHUNK0)schedule(dynamic,DINAMIC_CHUNK1)schedule(dynamic,DINAMIC_CHUNK2)schedule(dynamic,DINAMIC_CHUNK3)*/
+
   for(i = 0; i < num_files; i++)
   {
       /* Allocate  memory for local tree */
