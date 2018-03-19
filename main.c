@@ -89,15 +89,16 @@ void insert_word_tree(RBTree *tree, char *paraula, int num_vegades)
 
     /* If the key is not in the list, allocate memory for the data and
      * insert it in the list */
-
+    
     paraula_copy = malloc(sizeof(char) * (strlen(paraula)+1));
     strcpy(paraula_copy, paraula);
 
     tree_data = malloc(sizeof(RBData));
+    //#pragma omp critical{
     tree_data->key = paraula_copy;
     tree_data->num_vegades = num_vegades;
-
     insertNode(tree, tree_data);
+    //}
   }
 }
 
@@ -181,8 +182,9 @@ void tree_copy_local2global_recursive(Node *x, RBTree *tree_global)
 
   if (x->left != NIL)
     tree_copy_local2global_recursive(x->left, tree_global);
-
+  //#pragma omp critical{
   insert_word_tree(tree_global, x->data->key, x->data->num_vegades);
+  //}
 }
 
 
@@ -216,63 +218,40 @@ RBTree *create_tree_files(int num_files, char **filename_texts)
   
   omp_set_num_threads(NUM_THREADS0); /*omp_set_num_threads(NUM_THREADS1); omp_set_num_threads(NUM_THREADS2);*/
 
-  #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(static)  /*num_threads(num_THREADS0)num_threads(num_THREADS1)num_threads(num_THREADS2)*//* schedule(static,STATIC_CHUNK0)schedule(static,STATIC_CHUNK1)schedule(static,STATIC_CHUNK2)schedule(static,STATIC_CHUNK3)*/
-  
-  
-/*   #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(dynamic) num_threads(num_THREADS0)num_threads(num_THREADS1)num_threads(num_THREADS2)schedule(dynamic,DINAMIC_CHUNK0)schedule(dynamic,DINAMIC_CHUNK1)schedule(dynamic,DINAMIC_CHUNK2)schedule(dynamic,DINAMIC_CHUNK3)*/
-
-
+  #pragma omp parallel for private(filename,line,i,fp_file) shared(num_files,filename_texts) schedule(static)  
+  /* schedule(static,STATIC_CHUNK0)schedule(static,STATIC_CHUNK1)schedule(static,STATIC_CHUNK2)schedule(static,STATIC_CHUNK3)*//*num_threads(num_THREADS0)num_threads(num_THREADS1)num_threads(num_THREADS2)*/
   /* Observe that finished is a local variable, not a global one */
   for(i = 0; i < num_files; i++)
   {
       /* Allocate  memory for local tree */
-
       RBTree *tree_file;
       tree_file = (RBTree *) malloc(sizeof(RBTree));
-
       /* Initialize the tree */
       initTree(tree_file);
-
       filename = filename_texts[i];
       printf("Processant fitxer %s\n", filename);
-
-      /** This is the command we have to execute. Observe that we have to specify
-       * the parameter "-" in order to indicate that we want to output result to
-       * stdout.  In addition, observe that we need to specify \n at the end of the
-       * command to execute. 
-       */
-
       fp_file = fopen(filename, "r");
       if (!fp_file)
       {
           printf("ERROR: no puc crear canonada per al fitxer %s.\n", line);
           continue;
       }
-
       while (fgets(line, MAXLINE, fp_file) != NULL) {
           /* Remove the \n at the end of the line */
-
           line[strlen(line) - 1] = 0;
-
           /* Process the line */
-
           process_line(line, tree_file); 
       }
-
       fclose(fp_file);
-
       /* Copy all data from local tree to global tree */
       #pragma omp critical
       {
         tree_copy_local2global(tree_file, tree);
         }
       /* Delete local tree */
-
       deleteTree(tree_file);
       free(tree_file);
   }
-
-
   return tree;
 }
 
