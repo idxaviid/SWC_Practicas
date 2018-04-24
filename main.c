@@ -34,10 +34,8 @@ int main() {
   /* SimpleOpenCL types declaration */
   /*sclHard* hardware;
   sclSoft software;*/
-  
-  //set NDRange Dimensions
-  global_size[0]=1;global_size[1]=1;
-  local_size[0]=global_size[0];local_size[1]=1;
+  size_t global_size[2],local_size[2];
+
   /* Host data */
   float *A = NULL;  // Input array
   float *B = NULL;  // Input array
@@ -55,7 +53,9 @@ int main() {
   B = (float *) malloc(datasize);
   //C = (float *) malloc(datasize);
   Ctest = (float *) malloc(datasize);
-
+  //set NDRange Dimensions
+  global_size[0]=1;global_size[1]=1;
+  local_size[0]=global_size[0];local_size[1]=1;
   /* Initialize the input data */
   for(int i=0; i < elements; i++) {
    A[i] = i*0.00001;
