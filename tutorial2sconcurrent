@@ -1,0 +1,72 @@
+df2006 = spark.read.format("csv") \
+    .option("header", "true") \
+    .option("nullValue","NA") \
+    .option("inferSchema", "true").load("2006.csv")
+
+    
+df2007 = spark.read.format("csv") \
+    .option("header", "true") \
+    .option("nullValue","NA") \
+    .option("inferSchema", "true").load("2007.csv")
+    
+df2008 = spark.read.format("csv") \
+    .option("header", "true") \
+    .option("nullValue","NA") \
+    .option("inferSchema", "true").load("2008.csv")
+    
+ df2006.rdd.getNumPartitions()
+ df2007.rdd.getNumPartitions()
+ df2008.rdd.getNumPartitions()
+
+ df2006.count()
+ df2007.count()
+ df2008.count()
+ 
+df1 = df2006.union(df2007).union(df2008)
+df1.count()
+df1.rdd.getNumPartitions()
+
+df2 = df1.select("Year", "Month", "Origin", "Dest", "ArrDelay", "DepDelay")
+df3 = df2.na.drop()
+
+from pyspark.sql.functions import expr
+df4 = df3.withColumn("SumDelay", expr("ArrDelay + DepDelay"))
+df4.cache()
+
+from pyspark.sql.functions import avg
+df5 = df4.groupBy("Origin").agg(avg("SumDelay"))
+df5.show()
+df5.count()
+
+df6 = df5.withColumnRenamed("avg(SumDelay)", "Average Delay")
+df6.show()
+from pyspark.sql.functions import asc, desc
+df7 = df6.sort(asc("Average Delay"))
+df7.show()
+
+df77 = df4.groupBy("Year", "Origin").agg(avg("SumDelay"))
+
+
+df8=df4.select("Month", "Origin", "SumDelay")
+df9 = df8.groupBy("Month", "Origin").agg(avg("SumDelay"))
+df9.show()
+from pyspark.sql.functions import expr
+
+df9 = df9.where("Origin == 'JFK'")
+
+from pyspark.sql.functions import lit, count
+df11 = df4.where("Origin=='JFK'").groupBy("Origin", "Dest").agg(count(lit(1)))
+
+def retard(temps):
+    if (temps > 0):
+        return 1
+    else:
+        return 0
+        
+from pyspark.sql.types import IntegerType
+spark.udf.register("retard_spark", retard, IntegerType())
+
+df12 = df4.withColumn("Retard", expr("retard_spark(SumDelay)"))
+df12.show()
+df12.groupBy("Origin").agg(avg("Retard")).sort("avg(Retard)").show()
+
